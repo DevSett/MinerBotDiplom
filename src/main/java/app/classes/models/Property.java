@@ -30,7 +30,21 @@ public class Property {
 
     @Getter
     @Setter
+    private Integer waitToText;
+    @Getter
+    @Setter
+    private Integer waitToScreenshot;
+    @Getter
+    @Setter
     private String linkBalance;
+
+    @Getter
+    @Setter
+    private String ip;
+
+    @Getter
+    @Setter
+    private String port;
 
     //    private String gpuLogName;
     public Property() {
@@ -52,7 +66,12 @@ public class Property {
             telegramBotName = prop.getProperty("TelegramBotName");
             telegramApiKey = prop.getProperty("TelegramApiKey");
             setLinkBalance(prop.getProperty("LinkBalance"));
-//            gpuLogName = prop.getProperty("NameLogFileGpu");
+            setIp(prop.getProperty("Ip"));
+            setPort(prop.getProperty("Port"));
+            setWaitToScreenshot(Integer.valueOf(prop.getProperty("WaitToScreenshot")));
+            setWaitToText(Integer.valueOf(prop.getProperty("WaitToText")));
+
+            //            gpuLogName = prop.getProperty("NameLogFileGpu");
 
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -106,8 +125,9 @@ public class Property {
             for (Map.Entry<String, JsonElement> stringJsonElementEntry : jobject.entrySet()) {
                 JsonObject objectRig = stringJsonElementEntry.getValue().getAsJsonObject();
                 JsonElement key = objectRig.get("key");
-                if (password.equals(key.getAsString())) return new String[]{objectRig.get("link").getAsString(),objectRig.get("account").getAsString()};
+                if (password.equals(key.getAsString())) return new String[]{objectRig.get("link").getAsString(),objectRig.get("account").getAsString(),objectRig.get("type").getAsString()};
             }
+
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -121,5 +141,9 @@ public class Property {
 
     public void setPathToLog(String pathToLog) {
         this.pathToLog = pathToLog;
+    }
+
+    public String getIp() {
+        return ip;
     }
 }

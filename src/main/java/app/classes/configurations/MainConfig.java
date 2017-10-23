@@ -3,6 +3,7 @@ package app.classes.configurations;
 import app.MainApp;
 import app.classes.models.Autorithation;
 import app.classes.models.Property;
+import app.classes.server.Server;
 import app.classes.services.MinerBot;
 import app.classes.services.ServiceGpu;
 import app.classes.services.ServiceMoney;
@@ -44,9 +45,10 @@ public class MainConfig {
     }
 
     @Bean
-    public ServiceMoney serviceMoney(){
+    public ServiceMoney serviceMoney() {
         return new ServiceMoney();
     }
+
 
 //    @Bean
 //    @Scope("prototype")

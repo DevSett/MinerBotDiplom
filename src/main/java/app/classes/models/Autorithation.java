@@ -10,6 +10,7 @@ import lombok.extern.log4j.Log4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.GET;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -61,7 +62,9 @@ public class Autorithation {
         return session;
     }
 
-
+    @Getter
+    @Setter
+    private String type;
 //    public String getLeftTime() {
 //        return new Integer(timer.getInitialDelay() / 1000 / 60).toString();
 //    }
@@ -81,8 +84,10 @@ public class Autorithation {
                 String hours = new SimpleDateFormat("HH:mm:ss").format(date);
 
 
+//                System.out.println("Проверка 1 "+hoursAndMinuts);
+//                System.out.println("Проверка 2 "+time);
                 if (fullTime.equalsIgnoreCase(time) || hoursAndMinuts.equalsIgnoreCase(time) || hours.equalsIgnoreCase(time)) {
-                    minerBot.sendMessage(getChatId(), "⏰Уведомление:\n\n"+serviceMoney.getInfo(currentLink, account));
+                    minerBot.sendMessage(getChatId(), "⏰Уведомление:\n\n"+serviceMoney.getInfo(currentLink, account,getType()));
                     try {
 
                         Thread.sleep(1000);
@@ -110,6 +115,7 @@ public class Autorithation {
         if (propertys != null) {
             currentLink = propertys[0];
             setAccount(propertys[1]);
+            setType(propertys[2]);
 //            timer = new Timer(10000 * 86400, e -> {
 //                session = false;
 //                timer.stop();

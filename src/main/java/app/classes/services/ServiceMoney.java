@@ -39,7 +39,7 @@ public class ServiceMoney {
         return "\uD83D\uDC8EКурс Эфириума: \n $ - " + map.get("usd") + "\n \u20BD - " + map.get("rub") + "\n\n Цена средняя[(min+max)/2]";
     }
 
-    private Map<String,Double> getRateApi() {
+    private Map<String, Double> getRateApi() {
         PriceApi priceEthUsd;
         PriceApi priceEthRub;
 
@@ -66,15 +66,13 @@ public class ServiceMoney {
         return map;
     }
 
-    public static void main(String[] args) {
-        ServiceMoney serviceMoney = new ServiceMoney();
-        System.out.println(serviceMoney.getInfo("https://api.ethermine.org", "0x1a35478Ec84E49bf4F5A78A470a2740ee7fe042F") + "\n-!-");
-        System.out.println(serviceMoney.getBalance("0x1a35478Ec84E49bf4F5A78A470a2740ee7fe042F") + "\n-!-");
-        System.out.println(serviceMoney.getRate() + "\n-!-");
-        System.out.println(serviceMoney.getAverage("https://api.ethermine.org", "0x1a35478Ec84E49bf4F5A78A470a2740ee7fe042F") + "\n-!-");
-    }
+//    public static void main(String[] args) {
+//        ServiceMoney serviceMoney = new ServiceMoney();
+//        System.out.println(serviceMoney.getBalance("0x1a35478Ec84E49bf4F5A78A470a2740ee7fe042F") + "\n-!-");
+//        System.out.println(serviceMoney.getRate() + "\n-!-");
+//    }
 
-    public String getInfo(String urlMiner, String account) {
+    public String getInfo(String urlMiner, String account, String type) {
 
         //фермы
 
@@ -90,10 +88,20 @@ public class ServiceMoney {
         JsonArray array = jobject.get("data").getAsJsonArray();
 
         List<RigApi> rigs = new ArrayList<>();
+
         for (JsonElement jsonElement : array) {
             JsonObject object = jsonElement.getAsJsonObject();
             RigApi rig = new Gson().fromJson(object, RigApi.class);
-            rigs.add(rig);
+            rigs.add(new RigApi(
+                    rig.getWorker(),
+                    rig.getTime(),
+                    rig.getLastSeen(),
+                    rig.getReportedHashrate(),
+                    rig.getCurrentHashrate(),
+                    rig.getValidShares(),
+                    rig.getInvalidShares(),
+                    rig.getStaleShares(),
+                    rig.getAverageHashrate()));
         }
 
 
@@ -101,9 +109,9 @@ public class ServiceMoney {
         for (RigApi rig : rigs) {
             if (!result.isEmpty()) result += "\n\n";
             result += "\uD83D\uDDD3Рига - " + rig.getWorker() +
-                    "\n Средний хешрейт - " + rig.getAverageHashrate().doubleValue()/ 1000000 +
-                    "\n Текущий хэшрейт - " + rig.getCurrentHashrate().doubleValue() / 1000000 +
-                    "\n Зарегистрированный хэшрейт - " + rig.getReportedHashrate().doubleValue() / 1000000 +
+                    "\n Средний хешрейт - " + rig.getAverageHashrate().doubleValue() / (type.equals("0") ? 1000000 : 1) +
+                    "\n Текущий хэшрейт - " + rig.getCurrentHashrate().doubleValue() / (type.equals("0") ? 1000000 : 1) +
+                    "\n Зарегистрированный хэшрейт - " + rig.getReportedHashrate().doubleValue() / (type.equals("0") ? 1000000 : 1) +
                     "\n Отгаданные блоки - " + rig.getValidShares() +
                     "\n Старые блоки - " + rig.getStaleShares() +
                     "\n Опасные блоки - " + rig.getInvalidShares() +
@@ -161,29 +169,30 @@ public class ServiceMoney {
     }
 
 
-    public String getAverage(String currentLink, String account) {
-        String page = getPage(currentLink+ "/miner/:miner/currentStats".replaceAll(":miner", account));
+    public String getAverage(String currentLink, String account, String type) {
+        String page = getPage(currentLink + "/miner/:miner/currentStats".replaceAll(":miner", account));
 
         if (page.isEmpty()) return "";
         JsonElement jelement = new JsonParser().parse(page);
         JsonObject jobject = jelement.getAsJsonObject();
         MinerStatApi minerStatistic = new Gson().fromJson(jobject.get("data"), MinerStatApi.class);
 
-        String result = "\uD83D\uDDD2Статистика: "+
+
+        String result = "\uD83D\uDDD2Статистика: " +
                 "\n Активные риги - " + minerStatistic.getActiveWorkers() +
-                "\n Намайнил - 0." + minerStatistic.getUnpaid()+
+                "\n Намайнил - " + Math.round(minerStatistic.getUnpaid() / (type.equals("1") ? 1000d : 1)) / (type.equals("1") ? 100000d : 1) +
                 "\n Монет в минуту - " + minerStatistic.getCoinsPerMin() +
                 "\n Монет за неделю - " + minerStatistic.getCoinsPerMin().multiply(BigDecimal.valueOf(10080)) +
                 "\n Монет за месяц - " + minerStatistic.getCoinsPerMin().multiply(BigDecimal.valueOf(43800)) +
                 "\n Биткоинов в месяц - " + minerStatistic.getBtcPerMin().multiply(BigDecimal.valueOf(43800)) +
                 "\n Долларов в месяц - " + minerStatistic.getUsdPerMin().multiply(BigDecimal.valueOf(43800)) +
-                "\n Зарегистрированный хешрейт - " + minerStatistic.getReportedHashrate().doubleValue()/1000000 +
-                "\n Текущий хешрейт - " + minerStatistic.getCurrentHashrate().doubleValue()/1000000 +
-                "\n Средний хэшрейт - " + minerStatistic.getAverageHashrate().doubleValue()/1000000 +
+                "\n Зарегистрированный хешрейт - " + minerStatistic.getReportedHashrate().doubleValue() / (type.equals("0") ? 1000000 : 1) +
+                "\n Текущий хешрейт - " + minerStatistic.getCurrentHashrate().doubleValue() / (type.equals("0") ? 1000000 : 1) +
+                "\n Средний хэшрейт - " + minerStatistic.getAverageHashrate().doubleValue() / (type.equals("0") ? 1000000 : 1) +
                 "\n Отгаданные блоки - " + minerStatistic.getValidShares() +
-                "\n Старые блоки - "+ minerStatistic.getStaleShares() +
-                "\n Опасные блоки - "+ minerStatistic.getInvalidShares() +
-                "\n Последнее обновление - " + new SimpleDateFormat("HH:mm:ss").format(new Date(1000*minerStatistic.getLastSeen()));
+                "\n Старые блоки - " + minerStatistic.getStaleShares() +
+                "\n Опасные блоки - " + minerStatistic.getInvalidShares() +
+                "\n Последнее обновление - " + new SimpleDateFormat("HH:mm:ss").format(new Date(1000 * minerStatistic.getLastSeen()));
 
         return result;
 
@@ -205,11 +214,11 @@ public class ServiceMoney {
 
 //            Double dol = Double.valueOf(balance) * Double.valueOf(kursEth);
 //            return "Баланс: " + balance + " ETH\n" + "По курсу доллара: " + dol + " $\n По курсу рубля: " + dol * Double.valueOf(kursUsd);
-        Map<String,Double> map = getRateApi();
-        return "\uD83D\uDCB0Баланс:"  +
-                "\n Эфириум - " + balance.toString().substring(0, 9)+
-                "\n $ - " + new BigDecimal(map.get("usd")).multiply(BigDecimal.valueOf(Double.valueOf(balance.toString().substring(0,9)))).toString().substring(0,9)+
-                "\n \u20BD - " + new BigDecimal(map.get("rub")).multiply(BigDecimal.valueOf(Double.valueOf(balance.toString().substring(0,9)))).toString().substring(0,9);
+        Map<String, Double> map = getRateApi();
+        return "\uD83D\uDCB0Баланс:" +
+                "\n Эфириум - " + balance.toString().substring(0, 9) +
+                "\n $ - " + new BigDecimal(map.get("usd")).multiply(BigDecimal.valueOf(Double.valueOf(balance.toString().substring(0, 9)))).toString().substring(0, 9) +
+                "\n \u20BD - " + new BigDecimal(map.get("rub")).multiply(BigDecimal.valueOf(Double.valueOf(balance.toString().substring(0, 9)))).toString().substring(0, 9);
 
     }
 }
