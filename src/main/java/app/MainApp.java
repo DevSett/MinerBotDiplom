@@ -3,6 +3,7 @@ package app;
 import app.classes.configurations.MainConfig;
 import app.classes.models.Property;
 import app.classes.server.Server;
+import app.classes.services.AlertNotification;
 import lombok.Getter;
 import lombok.extern.log4j.Log4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,9 +59,13 @@ public class MainApp {
         threadBotVk.start();
 
         Thread threadServ = new Thread(() -> {
-            Server.connect(mainApp.property.getIp(),mainApp.property.getPort());
+            Server.connect(mainApp.property.getIp(), mainApp.property.getPort());
         });
         threadServ.start();
+
+        new Thread(() -> {
+            AlertNotification.check();
+        }).start();
     }
 
     public AnnotationConfigApplicationContext getCtx() {

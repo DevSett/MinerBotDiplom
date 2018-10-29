@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.lang.reflect.Array;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -21,12 +22,7 @@ public class ServiceGpu {
     @Autowired
     Property property;
 
-    public static void main(String[] args) {
-        ServiceGpu serviceGpu  = new ServiceGpu();
-        serviceGpu.property = new Property();
-        serviceGpu.property.setPathToLog("log.txt");
-        System.out.println(serviceGpu.getInformation());
-    }
+
     public String getInformation() {
         String[] fullInformation;
 
@@ -61,7 +57,7 @@ public class ServiceGpu {
             }
         }
 
-        return ("\uD83D\uDD6F\uD83D\uDD6F\uD83D\uDD6F\nТемпература:\n" + Arrays.asList(temperature.split("GPU")).subList(1, temperature.split("GPU").length) + "\nОбщая мощность:\n" + totalMhs.substring(totalMhs.indexOf("ETH"), totalMhs.indexOf(",")) + "\nМощность:\n" + Arrays.asList(mhs.split("GPU")).subList(1, mhs.split("GPU").length)).replaceAll(",","\n").replaceAll("\\[","").replaceAll("]","");
+        return ("\uD83D\uDD6F\uD83D\uDD6F\uD83D\uDD6F\nТемпература:\n" + Arrays.asList(temperature.split("GPU")).subList(1, temperature.split("GPU").length) + "\nОбщая мощность:\n" + totalMhs.substring(totalMhs.indexOf("ETH"), totalMhs.indexOf(",")) + "\nМощность:\n" + Arrays.asList(mhs.split("GPU")).subList(1, mhs.split("GPU").length)).replaceAll(",", "\n").replaceAll("\\[", "").replaceAll("]", "");
     }
 
 //    public String formatLineLog(String line, int fistSymbol, int secondSymbol, String symbol) {
@@ -102,5 +98,35 @@ public class ServiceGpu {
             logger.error("textFromFile", e);
         }
         return null;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(testConnection("45.126.154.121",53281));
+    }
+    public static boolean testConnection(String host, int port) {
+        Socket s = null;
+        boolean isSocket = false;
+        try {
+            isSocket = false;
+            s = new Socket(host, port);
+            isSocket = true;
+//            final URL url = new URL("http://www.telegram.me");
+//
+//            final URLConnection conn = url.openConnection(new Proxy(Proxy.Type.SOCKS, s.getRemoteSocketAddress()));
+//            conn.connect();
+//            System.out.println("success proxy: " + host + ":" + port);
+            return true;
+
+        } catch (Exception e) {
+
+            System.out.println("("+isSocket+")failed proxy: " + host + ":" + port);
+            return false;
+        } finally {
+            if (s != null)
+                try {
+                    s.close();
+                } catch (Exception e) {
+                }
+        }
     }
 }

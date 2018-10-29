@@ -4,7 +4,6 @@ import app.MainApp;
 import app.classes.enums.Commands;
 import app.classes.models.Autorithation;
 import app.classes.models.Property;
-import app.classes.server.Server;
 import app.classes.server.ServiceServer;
 import lombok.Getter;
 import lombok.NonNull;
@@ -21,19 +20,14 @@ import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.bots.DefaultBotOptions;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
 import java.io.*;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static app.classes.server.ServiceServer.getScreenshot;
 import static app.classes.server.ServiceServer.sessionMap;
@@ -65,24 +59,33 @@ public class MinerBot extends TelegramLongPollingBot {
 
     private Logger logger = Logger.getLogger(MinerBot.class);
 
-    List<Autorithation> list = new ArrayList<>();
+    public static List<Autorithation> list = new ArrayList<>();
 
     private String[] bufer;
+
+    public MinerBot(DefaultBotOptions option) {
+        super(option);
+    }
+
+    public MinerBot() {
+    }
 
     public void onUpdateReceived(Update update) {
         Message message = update.getMessage();
         if (message == null) message = update.getCallbackQuery().getMessage();
-        if (message.getText().equalsIgnoreCase("/start")) {
-            sendMessage(message.getChatId(), "Клавиатура доступна!", initCommand());
-            return;
-        }
+
         log.info("Введена команда: " + message.getText() + "\n" + message.getChat());
         Autorithation autorithation = checkAutorithation(message.getChatId(), message.getText().replace("/", ""));
         if (!autorithation.status()) {
             sendMessage(message.getChatId(), "Пароль введен неверный, попробуйте снова!");
             return;
         }
-
+        if (message.getText().equalsIgnoreCase("/start")) {
+            boolean guest = false;
+            if (autorithation.getName().equals("guest")) guest = true;
+            sendMessage(message.getChatId(), "Клавиатура доступна!", initCommand(guest));
+            return;
+        }
         if (message.getText().startsWith(Commands.SUBSCRIBE.toString())) {
 
         }
@@ -117,25 +120,25 @@ public class MinerBot extends TelegramLongPollingBot {
                     case STATUS: {
                         if (update.getMessage() == null) {
                             String id = UUID.randomUUID().toString();
-                            sendMessage(message.getChatId(), ServiceServer.getStatusDebug(id, update.getCallbackQuery().getData().split(" ")[1], false));
+                            sendMessage(message.getChatId(), ServiceServer.getStatusDebug(id, update.getCallbackQuery().getData().split(" ")[1], autorithation.getName(), false));
                             return;
                         }
 
-                        getRigs(message, Commands.STATUS.toString());
+                        getRigs(message, autorithation.getName(), Commands.STATUS.toString());
                         return;
                     }
                     case STATUS_DEBUG: {
                         if (update.getMessage() == null) {
                             String id = UUID.randomUUID().toString();
-                            sendMessage(message.getChatId(), ServiceServer.getStatusDebug(id, update.getCallbackQuery().getData().split(" ")[1], true));
+                            sendMessage(message.getChatId(), ServiceServer.getStatusDebug(id, update.getCallbackQuery().getData().split(" ")[1], autorithation.getName(), true));
                             return;
                         }
 
-                        getRigs(message, Commands.STATUS_DEBUG.toString());
+                        getRigs(message,autorithation.getName(), Commands.STATUS_DEBUG.toString());
                         return;
                     }
                     case AVERAGE:
-                        sendMessage(message.getChatId(), (temp = serviceMoney.getAverage(autorithation.getCurrentLink(), autorithation.getAccount(),autorithation.getType())) != null ? temp : "Неверно указана ссылка на пул в файле или ошибка получение данных о валюте(проверьте команду /rate)!");
+                        sendMessage(message.getChatId(), (temp = serviceMoney.getAverage(autorithation.getCurrentLink(), autorithation.getAccount(), autorithation.getType())) != null ? temp : "Неверно указана ссылка на пул в файле или ошибка получение данных о валюте(проверьте команду /rate)!");
                         return;
                     case BALANCE:
                         sendMessage(message.getChatId(), (temp = serviceMoney.getBalance(autorithation.getAccount())) != null ? temp : "Неверно указана ссылка на пул в файле или ошибка получение данных о валюте(проверьте команду /rate)!");
@@ -143,7 +146,7 @@ public class MinerBot extends TelegramLongPollingBot {
 //                    case SCREENSHOT:
 //                        sendImage(message.getChatId(),);
                     case MONEY:
-                        sendMessage(message.getChatId(), (temp = serviceMoney.getInfo(autorithation.getCurrentLink(), autorithation.getAccount(),autorithation.getType())) != null ? temp : "Неверно указана ссылка на пул в файле или ошибка получение данных о валюте(проверьте команду /rate)!");
+                        sendMessage(message.getChatId(), (temp = serviceMoney.getInfo(autorithation.getCurrentLink(), autorithation.getAccount(), autorithation.getType())) != null ? temp : "Неверно указана ссылка на пул в файле или ошибка получение данных о валюте(проверьте команду /rate)!");
                         return;
                     case RATE:
                         sendMessage(message.getChatId(), (temp = serviceMoney.getRate()) != null ? temp : "Ошибка получение данных о валюте!!!");
@@ -154,19 +157,19 @@ public class MinerBot extends TelegramLongPollingBot {
                     case SERVICE_REBOOT_RIG:
                         if (update.getMessage() == null) {
                             String id = UUID.randomUUID().toString();
-                            sendMessage(message.getChatId(), ServiceServer.shutdownRig(id, update.getCallbackQuery().getData().split(" ")[1],true));
+                            sendMessage(message.getChatId(), ServiceServer.shutdownRig(id, update.getCallbackQuery().getData().split(" ")[1], autorithation.getName(), true));
                         } else {
-                            getRigs(message,Commands.SERVICE_REBOOT_RIG.toString());
+                            getRigs(message, autorithation.getName(),Commands.SERVICE_REBOOT_RIG.toString());
                         }
 
                         return;
                     case SERVICE_SHUTDOWN_RIG:
                         if (update.getMessage() == null) {
                             String id = UUID.randomUUID().toString();
-                            sendMessage(message.getChatId(), ServiceServer.shutdownRig(id, update.getCallbackQuery().getData().split(" ")[1],false));
+                            sendMessage(message.getChatId(), ServiceServer.shutdownRig(id, update.getCallbackQuery().getData().split(" ")[1], autorithation.getName(), false));
 
                         } else {
-                            getRigs(message,Commands.SERVICE_SHUTDOWN_RIG.toString());
+                            getRigs(message,autorithation.getName(), Commands.SERVICE_SHUTDOWN_RIG.toString());
 
                         }
                         return;
@@ -176,14 +179,14 @@ public class MinerBot extends TelegramLongPollingBot {
                             SendPhoto sendPhoto = new SendPhoto();
                             sendPhoto.setChatId(message.getChatId());
 //
-                            String screenshot = getScreenshot(id, update.getCallbackQuery().getData().split(" ")[1]);
-                            if (screenshot==null){
-                                sendMessage(message.getChatId(),"Не удалось загрузить скриншот!");
+                            String screenshot = getScreenshot(id, update.getCallbackQuery().getData().split(" ")[1], autorithation.getName());
+                            if (screenshot == null) {
+                                sendMessage(message.getChatId(), "Не удалось загрузить скриншот!");
                                 return;
                             }
                             try {
                                 InputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(screenshot));
-                                sendPhoto.setNewPhoto(update.getCallbackQuery().getData().split(" ")[1]+" Скриншот от " + new Date(), inputStream);
+                                sendPhoto.setNewPhoto(update.getCallbackQuery().getData().split(" ")[1] + " Скриншот от " + new Date(), inputStream);
                                 sendPhoto.setCaption(update.getCallbackQuery().getData().split(" ")[1] + " Скриншот от " + new Date());
                                 sendPhoto(sendPhoto);
 
@@ -200,7 +203,7 @@ public class MinerBot extends TelegramLongPollingBot {
 //                        }
 //                        return;
                         }
-                        getRigs(message, Commands.SCREENSHOT.toString());
+                        getRigs(message,autorithation.getName(), Commands.SCREENSHOT.toString());
                         return;
 //                        SendPhoto sendPhoto = new SendPhoto();
 //                        sendPhoto.setChatId(message.getChatId());
@@ -219,12 +222,13 @@ public class MinerBot extends TelegramLongPollingBot {
     }
 
 
-    private boolean getRigs(Message message, String command) {
+    private boolean getRigs(Message message, String name, String command) {
         String id = UUID.randomUUID().toString();
         List<String> names = new ArrayList<>();
         sessionMap.forEach((o1, o2) -> {
-            names.add(o1);
-            System.out.println(o1);
+            o2.forEach((o3,o4)->{
+                if (o3.equals(name)) names.add(o1);
+            });
         });
 
         if (names.size() < 1) {
@@ -234,8 +238,8 @@ public class MinerBot extends TelegramLongPollingBot {
         if (names != null) {
             List<String> commands = new ArrayList<>();
 
-            for (String name : names) {
-                commands.add(command + " " + name);
+            for (String namec : names) {
+                commands.add(command + " " + namec);
             }
             sendMessage(message.getChatId(), "Выберете нужную ригу.",
                     keyboardFromTheList(names, commands, 2));
@@ -325,12 +329,18 @@ public class MinerBot extends TelegramLongPollingBot {
         return replyKeyboardMarkup;
     }
 
-    private ReplyKeyboardMarkup initCommand() {
+    private ReplyKeyboardMarkup initCommand(boolean guest) {
         List<String> commands = new ArrayList<>();
-        for (Commands commands1 : Commands.values()) {
-            commands.add(commands1.toString());
+        if (!guest)
+            for (Commands commands1 : Commands.values()) {
+                commands.add(commands1.toString());
+            }
+        else {
+            commands.add(Commands.BALANCE.toString());
+            commands.add(Commands.AVERAGE.toString());
+            commands.add(Commands.MONEY.toString());
+            commands.add(Commands.RATE.toString());
         }
-
         return keyboardCommands(commands, 1, false);
     }
 
@@ -374,4 +384,6 @@ public class MinerBot extends TelegramLongPollingBot {
         }
         return keyboardFromTheList(messages, commands, 6);
     }
+
+
 }

@@ -30,8 +30,20 @@ public class ServiceMoney {
 
     private Logger logger = Logger.getLogger(ServiceMoney.class);
     private String urlPriceApi = "https://api.nexchange.io/en/api/v1/price/&&&&&/latest/?format=json";
+    private String urlProxys = "http://www.freeproxy-list.ru/api/proxy?token=demo";
 
-
+    public static void main(String[] args) {
+        ServiceMoney serviceMoney = new ServiceMoney();
+        serviceMoney.getProxy();
+    }
+    public List<String> getProxy(){
+        List<String> proxy = new ArrayList<>();
+        String page = getPage(urlProxys);
+        for (String s : page.split("\n")) {
+            proxy.add(s);
+        }
+        return proxy;
+    }
     public String getRate() {
 
         Map map = getRateApi();
@@ -73,9 +85,6 @@ public class ServiceMoney {
 //    }
 
     public String getInfo(String urlMiner, String account, String type) {
-
-        //фермы
-
         String page = getPage(
                 urlMiner
                         + "/miner/" + account + "/workers"
@@ -203,8 +212,10 @@ public class ServiceMoney {
     public String getBalance(String account) {
 //        String page = getPage(property.getLinkBalance() + account);
         String page = getPage("https://etherchain.org/api/account/" + account);
+        System.out.println("https://etherchain.org/api/account/" + account);
         if (page.isEmpty()) return "";
 
+        System.out.println(page);
         JsonElement jelement = new JsonParser().parse(page);
         JsonObject jobject = jelement.getAsJsonObject();
 

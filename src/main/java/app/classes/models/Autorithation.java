@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;
+import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -41,14 +42,13 @@ public class Autorithation {
     @Setter
     @Getter
     private String account;
-    private String currentLink = null;
 
+    private String currentLink = null;
 //    private Timer timer;
 
     private Long chatId;
 
     private boolean session = false;
-
 
     public Long getChatId() {
         return chatId;
@@ -68,6 +68,11 @@ public class Autorithation {
 //    public String getLeftTime() {
 //        return new Integer(timer.getInitialDelay() / 1000 / 60).toString();
 //    }
+
+    @Getter
+    @Setter
+    private String name;
+
 
     private List<Boolean> list = new ArrayList<>();
 
@@ -116,11 +121,7 @@ public class Autorithation {
             currentLink = propertys[0];
             setAccount(propertys[1]);
             setType(propertys[2]);
-//            timer = new Timer(10000 * 86400, e -> {
-//                session = false;
-//                timer.stop();
-//            });
-//            timer.start();
+            setName(propertys[3]);
             session = true;
         } else {
             exit();
@@ -129,7 +130,6 @@ public class Autorithation {
     }
 
     public void exit() {
-//        if (timer != null) timer.stop();
         stopSubscribes();
         session = false;
         currentLink = null;
@@ -139,4 +139,6 @@ public class Autorithation {
     public String getCurrentLink() {
         return currentLink;
     }
+
+
 }
